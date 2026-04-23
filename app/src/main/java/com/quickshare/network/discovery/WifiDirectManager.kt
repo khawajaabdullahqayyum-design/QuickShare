@@ -7,7 +7,6 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.net.wifi.p2p.WifiP2pConfig
 import android.net.wifi.p2p.WifiP2pDevice
-import android.net.wifi.p2p.WifiP2pDeviceList
 import android.net.wifi.p2p.WifiP2pManager
 import android.net.wifi.p2p.WifiP2pManager.*
 import android.os.Build
@@ -23,9 +22,6 @@ import kotlinx.coroutines.flow.callbackFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
-// app/src/main/java/com/quickshare/network/discovery/WifiDirectManager.kt
-// ... (package and imports unchanged)
-
 @Singleton
 class WifiDirectManager @Inject constructor(
     private val context: Context
@@ -33,48 +29,24 @@ class WifiDirectManager @Inject constructor(
     private val wifiP2pManager: WifiP2pManager? by lazy {
         context.getSystemService(Context.WIFI_P2P_SERVICE) as? WifiP2pManager
     }
-    
-    private var p2pChannel: Channel? = null   // renamed from 'channel'
-    // ... rest of class unchanged ...
 
-    fun initialize(): Boolean {
-        if (wifiP2pManager == null) return false
-        
-        p2pChannel = wifiP2pManager?.initialize(
-            context,
-            Looper.getMainLooper()
-        ) { 
-            // Channel disconnected
-        }
-        // ...
-    }
+    private var p2pChannel: Channel? = null
 
-    fun startDiscovery(): Flow<DiscoveryResult> = callbackFlow {
-        _isDiscovering.value = true
-        
-        val actionListener = object : ActionListener {
-            override fun onSuccess() {
-                trySend(DiscoveryResult.DiscoveryStarted)
-            }
-            
-            override fun onFailure(reason: Int) {
-                trySend(DiscoveryResult.DiscoveryFailed(getFailureReason(reason)))
-                _isDiscovering.value = false
-            }
-        }
-        
-        wifiP2pManager?.discoverPeers(p2pChannel, actionListener)   // use p2pChannel
-        
-        awaitClose {
-            stopDiscovery()
-        }
+    private val _devices = MutableStateFlow<List<Device>>(emptyList())
+    val devices = _devices.asStateFlow()
+
+    private val _connectionStatus = MutableStateFlow<ConnectionStatus>(ConnectionStatus.AVAILABLE)
+    val connectionStatus = _connectionStatus.asStateFlow()
+
+    private val _isDiscovering = MutableStateFlow(false)
+    val isDiscovering = _isDiscovering.asStateFlow()
+
+    private val peerListListener = PeerListListener { peerList ->
+        val devices = peerList.deviceList.map { it.toDevice() }
+        _devices.value = devices
     }
-    
-    // ... everywhere else replace 'channel' with 'p2pChannel'
-}
 
     private val connectionInfoListener = ConnectionInfoListener { wifiP2pInfo ->
-        // Handle connection info - group owner IP can be obtained here
         wifiP2pInfo?.let {
             if (it.groupFormed && it.isGroupOwner) {
                 _connectionStatus.value = ConnectionStatus.CONNECTED
@@ -90,10 +62,10 @@ class WifiDirectManager @Inject constructor(
                     _isDiscovering.value = state == WIFI_P2P_STATE_ENABLED
                 }
                 WIFI_P2P_PEERS_CHANGED_ACTION -> {
-                    wifiP2pManager?.requestPeers(channel, peerListListener)
+                    wifiP2pManager?.requestPeers(p2pChannel, peerListListener)
                 }
                 WIFI_P2P_CONNECTION_CHANGED_ACTION -> {
-                    wifiP2pManager?.requestConnectionInfo(channel, connectionInfoListener)
+                    wifiP2pManager?.requestConnectionInfo(p2pChannel, connectionInfoListener)
                 }
                 WIFI_P2P_THIS_DEVICE_CHANGED_ACTION -> {
                     // This device's details changed
@@ -105,7 +77,7 @@ class WifiDirectManager @Inject constructor(
     fun initialize(): Boolean {
         if (wifiP2pManager == null) return false
 
-        channel = wifiP2pManager?.initialize(
+        p2pChannel = wifiP2pManager?.initialize(
             context,
             Looper.getMainLooper()
         ) {
@@ -142,7 +114,7 @@ class WifiDirectManager @Inject constructor(
             }
         }
 
-        wifiP2pManager?.discoverPeers(channel, actionListener)
+        wifiP2pManager?.discoverPeers(p2pChannel, actionListener)
 
         awaitClose {
             stopDiscovery()
@@ -150,7 +122,7 @@ class WifiDirectManager @Inject constructor(
     }
 
     fun stopDiscovery() {
-        wifiP2pManager?.stopPeerDiscovery(channel, null)
+        wifiP2pManager?.stopPeerDiscovery(p2pChannel, null)
         _isDiscovering.value = false
     }
 
@@ -173,7 +145,7 @@ class WifiDirectManager @Inject constructor(
             }
         }
 
-        wifiP2pManager?.connect(channel, config, actionListener)
+        wifiP2pManager?.connect(p2pChannel, config, actionListener)
 
         awaitClose {
             disconnect()
@@ -181,7 +153,7 @@ class WifiDirectManager @Inject constructor(
     }
 
     fun disconnect() {
-        wifiP2pManager?.removeGroup(channel, null)
+        wifiP2pManager?.removeGroup(p2pChannel, null)
         _connectionStatus.value = ConnectionStatus.AVAILABLE
     }
 
