@@ -1,34 +1,34 @@
 // app/src/main/java/com/quickshare/ui/transfer/TransferViewModel.kt
 package com.quickshare.ui.transfer
 
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.quickshare.data.model.*
+import com.quickshare.network.connection.ConnectionResult
 import com.quickshare.network.connection.TcpClient
 import com.quickshare.network.connection.TcpServer
 import com.quickshare.network.discovery.WifiDirectManager
 import com.quickshare.network.transfer.ChunkedTransfer
 import com.quickshare.network.transfer.TransferProtocol
-import com.quickshare.network.transfer.TransferResult
-import com.quickshare.service.TransferService
+import com.quickshare.network.transfer.TransferState
+import com.quickshare.ui.common.asLiveData
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
 import javax.inject.Inject
 
 @HiltViewModel
 class TransferViewModel @Inject constructor(
+    private val app: Application,
     private val wifiDirectManager: WifiDirectManager,
     private val tcpServer: TcpServer,
     private val tcpClient: TcpClient,
     private val chunkedTransfer: ChunkedTransfer
-) : ViewModel() {
+) : AndroidViewModel(app) {
 
     val devices: LiveData<List<Device>> = wifiDirectManager.devices.asLiveData()
     val isDiscovering: LiveData<Boolean> = wifiDirectManager.isDiscovering.asLiveData()
@@ -112,8 +112,7 @@ class TransferViewModel @Inject constructor(
         val fileItem = _selectedFiles.value?.find { it.uri.toString() == transferItem.fileId } ?: return
 
         withContext(Dispatchers.IO) {
-            val context = getApplication<Application>()
-            context.contentResolver.openInputStream(fileItem.uri)?.use { inputStream ->
+            app.contentResolver.openInputStream(fileItem.uri)?.use { inputStream ->
                 val outputStream = tcpClient.getOutputStream() ?: return@withContext
 
                 val fileInfo = TransferProtocol.FileInfo(
