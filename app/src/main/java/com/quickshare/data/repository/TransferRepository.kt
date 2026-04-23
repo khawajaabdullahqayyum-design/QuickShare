@@ -2,6 +2,7 @@
 package com.quickshare.data.repository
 
 import com.quickshare.data.model.TransferItem
+import com.quickshare.data.model.TransferStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
