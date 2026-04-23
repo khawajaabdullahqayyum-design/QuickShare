@@ -7,10 +7,11 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.quickshare.data.model.*
-import com.quickshare.network.connection.ConnectionResult
 import com.quickshare.network.connection.TcpClient
 import com.quickshare.network.connection.TcpServer
 import com.quickshare.network.discovery.WifiDirectManager
+import com.quickshare.network.discovery.ConnectionResult as DiscoveryConnectionResult   // Alias to avoid conflict
+import com.quickshare.network.connection.ConnectionResult as TcpConnectionResult
 import com.quickshare.network.transfer.ChunkedTransfer
 import com.quickshare.network.transfer.TransferProtocol
 import com.quickshare.network.transfer.TransferState
@@ -64,16 +65,19 @@ class TransferViewModel @Inject constructor(
         viewModelScope.launch {
             wifiDirectManager.connectToDevice(device).collect { result ->
                 when (result) {
-                    is ConnectionResult.Connected -> {
-                        // After Wi-Fi Direct connected, connect TCP
+                    is DiscoveryConnectionResult.Connected -> {
+                        // Wi-Fi Direct connected, now establish TCP
                         val groupOwnerAddress = getGroupOwnerIp()
                         groupOwnerAddress?.let { ip ->
-                            val connection = tcpClient.connect(ip)
-                            if (connection is ConnectionResult.Success) {
+                            val tcpResult = tcpClient.connect(ip)
+                            if (tcpResult is TcpConnectionResult.Success) {
                                 tcpClient.sendHandshake(getDeviceName())
                                 startFileTransfer()
                             }
                         }
+                    }
+                    is DiscoveryConnectionResult.Failed -> {
+                        // Handle Wi-Fi Direct connection failure
                     }
                     else -> {}
                 }
@@ -134,8 +138,8 @@ class TransferViewModel @Inject constructor(
     }
 
     private fun getGroupOwnerIp(): String? {
-        // This would be obtained from WifiP2pInfo after connection
-        return "192.168.49.1" // Placeholder
+        // In production, obtain from WifiP2pInfo after group formation
+        return "192.168.49.1"
     }
 
     private fun getDeviceName(): String {
