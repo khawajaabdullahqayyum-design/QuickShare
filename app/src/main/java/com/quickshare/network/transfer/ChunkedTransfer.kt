@@ -91,10 +91,8 @@ class ChunkedTransfer @Inject constructor(
                     ))
                 }
 
-                // Send completion packet
-                fun createCompletePacket(): ByteArray {
-    return createPacket(TYPE_TRANSFER_COMPLETE, byteArrayOf())
-}
+                // Send completion packet using public function
+                val completePacket = TransferProtocol.createCompletePacket()
                 outputStream.write(completePacket)
                 outputStream.flush()
 
@@ -148,14 +146,6 @@ class ChunkedTransfer @Inject constructor(
                                 receivedBytes.addAll(decryptedData.toList())
                                 totalReceived += it.length
 
-                                // Send ACK
-                                val ack = TransferProtocol.ChunkAck(
-                                    fileId = it.fileId,
-                                    chunkIndex = it.chunkIndex,
-                                    success = true
-                                )
-                                // Note: In a real implementation, you'd send ACK back
-
                                 val progress = if (fileInfo.fileSize > 0) {
                                     ((totalReceived.toFloat() / fileInfo.fileSize) * 100).toInt()
                                 } else 0
@@ -206,8 +196,8 @@ class ChunkedTransfer @Inject constructor(
 
     private fun parseChunkData(inputStream: InputStream): TransferProtocol.ChunkData? {
         try {
-            // Read fileId (16 bytes for UUID format)
-            val fileIdBytes = ByteArray(36) // UUID string length
+            // Read fileId (36 bytes for UUID string)
+            val fileIdBytes = ByteArray(36)
             inputStream.read(fileIdBytes)
             val fileId = String(fileIdBytes, Charsets.UTF_8)
 
