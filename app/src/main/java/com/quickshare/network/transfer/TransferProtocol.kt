@@ -1,4 +1,4 @@
-// app/src/main/java/com/quickshare/network/transfer/TransferProtocol.kt
+    // app/src/main/java/com/quickshare/network/transfer/TransferProtocol.kt
 package com.quickshare.network.transfer
 
 import android.os.Parcelable
@@ -19,7 +19,7 @@ object TransferProtocol {
     const val TYPE_PAUSE: Byte = 0x07
     const val TYPE_RESUME: Byte = 0x08
 
-    const val HEADER_SIZE = 12 // type(1) + flags(1) + length(4) + checksum(4) + reserved(2)
+    const val HEADER_SIZE = 12
 
     @Parcelize
     data class Handshake(
@@ -132,7 +132,12 @@ object TransferProtocol {
         return createPacket(TYPE_CHUNK_ACK, payload.array())
     }
 
-    private fun createPacket(type: Byte, payload: ByteArray): ByteArray {
+    fun createCompletePacket(): ByteArray {
+        return createPacket(TYPE_TRANSFER_COMPLETE, byteArrayOf())
+    }
+
+    // Changed from private to internal so ChunkedTransfer can use it
+    internal fun createPacket(type: Byte, payload: ByteArray): ByteArray {
         val header = ByteBuffer.allocate(HEADER_SIZE).order(ByteOrder.BIG_ENDIAN)
         header.put(type)
         header.put(0) // flags
