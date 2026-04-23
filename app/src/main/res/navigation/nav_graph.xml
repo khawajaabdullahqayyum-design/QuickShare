@@ -1,0 +1,48 @@
+<!-- app/src/main/res/navigation/nav_graph.xml -->
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/navigation_home">
+
+    <fragment
+        android:id="@+id/navigation_home"
+        android:name="com.quickshare.ui.home.HomeFragment"
+        android:label="Home"
+        tools:layout="@layout/fragment_home">
+        <action
+            android:id="@+id/action_home_to_files"
+            app:destination="@id/navigation_files" />
+        <action
+            android:id="@+id/action_home_to_devices"
+            app:destination="@id/navigation_devices" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/navigation_files"
+        android:name="com.quickshare.ui.files.FilePickerFragment"
+        android:label="Select Files"
+        tools:layout="@layout/fragment_file_picker">
+        <action
+            android:id="@+id/action_files_to_devices"
+            app:destination="@id/navigation_devices" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/navigation_devices"
+        android:name="com.quickshare.ui.devices.DevicesFragment"
+        android:label="Devices"
+        tools:layout="@layout/fragment_devices">
+        <action
+            android:id="@+id/action_devices_to_transfer"
+            app:destination="@id/navigation_transfer" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/navigation_transfer"
+        android:name="com.quickshare.ui.transfer.TransferFragment"
+        android:label="Transfer"
+        tools:layout="@layout/fragment_transfer" />
+
+</navigation>

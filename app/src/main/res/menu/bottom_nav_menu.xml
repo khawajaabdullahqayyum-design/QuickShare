@@ -1,0 +1,16 @@
+<!-- app/src/main/res/menu/bottom_nav_menu.xml -->
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/navigation_home"
+        android:icon="@drawable/ic_home"
+        android:title="Home" />
+    <item
+        android:id="@+id/navigation_devices"
+        android:icon="@drawable/ic_devices"
+        android:title="Devices" />
+    <item
+        android:id="@+id/navigation_transfer"
+        android:icon="@drawable/ic_transfer"
+        android:title="Transfer" />
+</menu>
