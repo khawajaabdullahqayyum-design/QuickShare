@@ -17,7 +17,7 @@ import com.quickshare.ui.transfer.TransferViewModel
 import com.quickshare.utils.NetworkUtils
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
-
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 @AndroidEntryPoint
 class DevicesFragment : Fragment() {
 
