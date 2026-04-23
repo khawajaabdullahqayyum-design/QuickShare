@@ -8,16 +8,14 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.quickshare.R
 import com.quickshare.data.model.ConnectionStatus
+import com.quickshare.data.model.Device
 import com.quickshare.databinding.FragmentDevicesBinding
 import com.quickshare.ui.transfer.TransferViewModel
-import com.quickshare.utils.NetworkUtils
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+
 @AndroidEntryPoint
 class DevicesFragment : Fragment() {
 
@@ -47,11 +45,9 @@ class DevicesFragment : Fragment() {
     }
 
     private fun setupRecyclerView() {
-        deviceAdapter = DeviceAdapter(
-            onDeviceClick = { device ->
-                connectToDevice(device)
-            }
-        )
+        deviceAdapter = DeviceAdapter { device ->
+            connectToDevice(device)
+        }
 
         binding.rvDevices.apply {
             layoutManager = LinearLayoutManager(requireContext())
@@ -81,7 +77,8 @@ class DevicesFragment : Fragment() {
                 ConnectionStatus.CONNECTED -> {
                     binding.tvStatus.text = "Connected"
                     if (viewModel.selectedFiles.value?.isNotEmpty() == true) {
-                        findNavController().navigate(R.id.action_devices_to_transfer)
+                        // Navigate to transfer screen
+                        // findNavController().navigate(R.id.action_devices_to_transfer)
                     }
                 }
                 ConnectionStatus.CONNECTING -> {
@@ -97,7 +94,7 @@ class DevicesFragment : Fragment() {
         }
     }
 
-    private fun connectToDevice(device: com.quickshare.data.model.Device) {
+    private fun connectToDevice(device: Device) {
         viewModel.connectToDevice(device)
     }
 
