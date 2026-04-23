@@ -30,55 +30,75 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Sanitize all XML files (remove BOM, fix declarations)
+      - name: Clean all XML files (remove BOM, fix encoding)
         run: |
           python3 << 'EOF'
           import os
           import glob
-          import re
 
-          # Path to resource directory
           res_dir = "app/src/main/res"
-          
-          # Find all XML files recursively
           xml_files = glob.glob(os.path.join(res_dir, "**/*.xml"), recursive=True)
           
           for file_path in xml_files:
+              # Read as bytes to detect BOM
               with open(file_path, "rb") as f:
                   raw = f.read()
               
-              # Remove UTF-8 BOM (EF BB BF) anywhere
-              cleaned = raw.replace(b'\xef\xbb\xbf', b'')
+              # Remove UTF-8 BOM (EF BB BF)
+              if raw.startswith(b'\xef\xbb\xbf'):
+                  raw = raw[3:]
               
-              # Remove UTF-16 BOMs if present (just in case)
-              cleaned = cleaned.replace(b'\xff\xfe', b'').replace(b'\xfe\xff', b'')
+              # Remove any other BOM occurrences (just in case)
+              raw = raw.replace(b'\xef\xbb\xbf', b'')
+              raw = raw.replace(b'\xff\xfe', b'')   # UTF-16 LE BOM
+              raw = raw.replace(b'\xfe\xff', b'')   # UTF-16 BE BOM
               
-              # Decode to string for further processing
+              # Decode safely
               try:
-                  text = cleaned.decode('utf-8')
+                  text = raw.decode('utf-8')
               except UnicodeDecodeError:
-                  # If not UTF-8, try UTF-16
-                  text = cleaned.decode('utf-16')
+                  text = raw.decode('utf-8', errors='ignore')
               
-              # Remove any non-printable characters before the first '<'
-              # (except whitespace)
+              # Remove any non-printable control characters except whitespace
+              # that might appear before the first '<'
               first_lt = text.find('<')
               if first_lt > 0:
                   prefix = text[:first_lt]
-                  # Keep only whitespace (space, tab, newline) in prefix
+                  # Keep only whitespace
                   prefix_clean = ''.join(c for c in prefix if c in ' \t\n\r')
                   text = prefix_clean + text[first_lt:]
               
-              # Ensure the file starts with <?xml if it doesn't but has < afterwards
-              # Actually, just leave it as is; the above cleaning is enough.
-              
-              # Write back as UTF-8 without BOM
+              # Write back as clean UTF-8 without BOM
               with open(file_path, "w", encoding="utf-8") as f:
                   f.write(text)
-              
-              print(f"Sanitized: {file_path}")
           
-          print(f"Total XML files processed: {len(xml_files)}")
+          print(f"Cleaned {len(xml_files)} XML files.")
+          EOF
+
+      - name: Verify XML files are well-formed
+        run: |
+          python3 << 'EOF'
+          import xml.etree.ElementTree as ET
+          import glob
+          import os
+
+          res_dir = "app/src/main/res"
+          xml_files = glob.glob(os.path.join(res_dir, "**/*.xml"), recursive=True)
+          
+          failed = []
+          for f in xml_files:
+              try:
+                  ET.parse(f)
+              except Exception as e:
+                  failed.append((f, str(e)))
+          
+          if failed:
+              print("ERROR: The following XML files are not well-formed:")
+              for f, err in failed:
+                  print(f"  - {f}: {err}")
+              exit(1)
+          else:
+              print(f"All {len(xml_files)} XML files are well-formed.")
           EOF
 
       - name: Cache Gradle dependencies
