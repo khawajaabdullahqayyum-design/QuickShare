@@ -92,10 +92,9 @@ class ChunkedTransfer @Inject constructor(
                 }
 
                 // Send completion packet
-                val completePacket = TransferProtocol.createPacket(
-                    TransferProtocol.TYPE_TRANSFER_COMPLETE,
-                    byteArrayOf()
-                )
+                fun createCompletePacket(): ByteArray {
+    return createPacket(TYPE_TRANSFER_COMPLETE, byteArrayOf())
+}
                 outputStream.write(completePacket)
                 outputStream.flush()
 
