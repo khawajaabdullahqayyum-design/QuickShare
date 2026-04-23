@@ -30,14 +30,56 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Remove BOM and invisible characters from XML files
+      - name: Sanitize all XML files (remove BOM, fix declarations)
         run: |
-          echo "Cleaning XML files..."
-          # Remove UTF-8 BOM (EF BB BF) anywhere in the file
-          find app/src/main/res -type f -name "*.xml" -exec sed -i 's/\xEF\xBB\xBF//g' {} \;
-          # Also remove any other common invisible control characters if present
-          find app/src/main/res -type f -name "*.xml" -exec sed -i 's/\r$//' {} \;
-          echo "XML cleaning complete."
+          python3 << 'EOF'
+          import os
+          import glob
+          import re
+
+          # Path to resource directory
+          res_dir = "app/src/main/res"
+          
+          # Find all XML files recursively
+          xml_files = glob.glob(os.path.join(res_dir, "**/*.xml"), recursive=True)
+          
+          for file_path in xml_files:
+              with open(file_path, "rb") as f:
+                  raw = f.read()
+              
+              # Remove UTF-8 BOM (EF BB BF) anywhere
+              cleaned = raw.replace(b'\xef\xbb\xbf', b'')
+              
+              # Remove UTF-16 BOMs if present (just in case)
+              cleaned = cleaned.replace(b'\xff\xfe', b'').replace(b'\xfe\xff', b'')
+              
+              # Decode to string for further processing
+              try:
+                  text = cleaned.decode('utf-8')
+              except UnicodeDecodeError:
+                  # If not UTF-8, try UTF-16
+                  text = cleaned.decode('utf-16')
+              
+              # Remove any non-printable characters before the first '<'
+              # (except whitespace)
+              first_lt = text.find('<')
+              if first_lt > 0:
+                  prefix = text[:first_lt]
+                  # Keep only whitespace (space, tab, newline) in prefix
+                  prefix_clean = ''.join(c for c in prefix if c in ' \t\n\r')
+                  text = prefix_clean + text[first_lt:]
+              
+              # Ensure the file starts with <?xml if it doesn't but has < afterwards
+              # Actually, just leave it as is; the above cleaning is enough.
+              
+              # Write back as UTF-8 without BOM
+              with open(file_path, "w", encoding="utf-8") as f:
+                  f.write(text)
+              
+              print(f"Sanitized: {file_path}")
+          
+          print(f"Total XML files processed: {len(xml_files)}")
+          EOF
 
       - name: Cache Gradle dependencies
         uses: actions/cache@v4
