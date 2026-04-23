@@ -14,7 +14,7 @@ data class FileItem(
     val type: FileType,
     var isSelected: Boolean = false
 ) : Parcelable {
-
+    
     val formattedSize: String
         get() = when {
             size < 1024 -> "$size B"
@@ -22,7 +22,7 @@ data class FileItem(
             size < 1024 * 1024 * 1024 -> "${size / (1024 * 1024)} MB"
             else -> "${size / (1024 * 1024 * 1024)} GB"
         }
-
+    
     val extension: String
         get() = name.substringAfterLast(".", "")
 }
@@ -33,6 +33,19 @@ enum class FileType {
     DOCUMENT,
     APK,
     OTHER
+}
+
+enum class TransferDirection {
+    SENDING,
+    RECEIVING
+}
+
+enum class TransferStatus {
+    PENDING,
+    TRANSFERRING,
+    PAUSED,
+    COMPLETED,
+    FAILED
 }
 
 @Parcelize
@@ -47,26 +60,13 @@ data class TransferItem(
     var status: TransferStatus = TransferStatus.PENDING,
     var speed: Long = 0 // bytes per second
 ) : Parcelable {
-
+    
     val id: String = fileId
-
+    
     val formattedSpeed: String
         get() = when {
             speed < 1024 -> "$speed B/s"
             speed < 1024 * 1024 -> "${speed / 1024} KB/s"
             else -> "${speed / (1024 * 1024)} MB/s"
         }
-}
-
-enum class TransferDirection {
-    SENDING,
-    RECEIVING
-}
-
-enum class TransferStatus {
-    PENDING,
-    TRANSFERRING,
-    PAUSED,
-    COMPLETED,
-    FAILED
 }
