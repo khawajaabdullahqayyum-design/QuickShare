@@ -1,10 +1,8 @@
 // app/src/main/java/com/quickshare/ui/files/FilePickerFragment.kt
 package com.quickshare.ui.files
 
-import android.Manifest
 import android.content.ContentUris
 import android.database.Cursor
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
@@ -13,6 +11,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import com.quickshare.R
@@ -59,11 +58,9 @@ class FilePickerFragment : Fragment() {
     }
 
     private fun setupRecyclerView() {
-        fileAdapter = FileAdapter(
-            onItemClick = { file ->
-                toggleSelection(file)
-            }
-        )
+        fileAdapter = FileAdapter { file ->
+            toggleSelection(file)
+        }
 
         binding.rvFiles.apply {
             layoutManager = GridLayoutManager(requireContext(), 3)
