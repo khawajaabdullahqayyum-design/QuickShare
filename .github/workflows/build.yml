@@ -30,6 +30,12 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Remove BOM from XML files
+        run: |
+          echo "Removing BOM from XML files..."
+          find app/src/main/res -type f -name "*.xml" -exec sed -i '1s/^\xEF\xBB\xBF//' {} \;
+          echo "BOM removal complete."
+
       - name: Cache Gradle dependencies
         uses: actions/cache@v4
         with:
